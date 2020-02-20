@@ -2,7 +2,7 @@ provider "google" {
   project     = "${var.var_project}"
 }
 module "vpc" {
-  source = "../modules/global" 
+  source = "../modules/gcp-vpc" 
   env                   = "${var.var_env}"
   company               = "${var.var_company}"
   var_uc1_public_subnet = "${var.uc1_public_subnet}"
