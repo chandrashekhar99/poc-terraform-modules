@@ -1,37 +1,32 @@
-provider "google" {
-  project     = "${var.var_project}"
-}
 module "vpc" {
-  source = "../modules/gcp-vpc" 
-  env                   = "${var.var_env}"
-  company               = "${var.var_company}"
-  var_uc1_public_subnet = "${var.uc1_public_subnet}"
-  var_uc1_private_subnet= "${var.uc1_private_subnet}"
-  var_ue1_public_subnet = "${var.ue1_public_subnet}"
-  var_ue1_private_subnet= "${var.ue1_private_subnet}"
-}
-module "uc1" {
-  source                = "../modules/uc1"
-  network_self_link     = "${module.vpc.out_vpc_self_link}"
-  subnetwork1           = "${module.uc1.uc1_out_public_subnet_name}"
-  env                   = "${var.var_env}"
-  company               = "${var.var_company}"
-  var_uc1_public_subnet = "${var.uc1_public_subnet}"
-  var_uc1_private_subnet= "${var.uc1_private_subnet}"
-}
-module "ue1" {
-  source                = "../modules/ue1"
-  network_self_link     = "${module.vpc.out_vpc_self_link}"
-  subnetwork1           = "${module.ue1.ue1_out_public_subnet_name}"
-  env                   = "${var.var_env}"
-  company               = "${var.var_company}"
-  var_ue1_public_subnet = "${var.ue1_public_subnet}"
-  var_ue1_private_subnet= "${var.ue1_private_subnet}"
+  source                  = "../modules/vpc"
+  network_name            = var.network_name
+  auto_create_subnetworks = var.auto_create_subnetworks
+  routing_mode            = var.routing_mode
+  project_id              = var.project_id
+  description             = var.description
+  shared_vpc_host         = var.shared_vpc_host
 }
 
-# Display Output Public Instance
-output "uc1_public_address"  { value = "${module.uc1.uc1_pub_address}"}
-output "uc1_private_address" { value = "${module.uc1.uc1_pri_address}"}
-output "ue1_public_address"  { value = "${module.ue1.ue1_pub_address}"}
-output "ue1_private_address" { value = "${module.ue1.ue1_pri_address}"}
-output "vpc_self_link" { value = "${module.vpc.out_vpc_self_link}"}
+/******************************************
+	Subnet configuration
+ *****************************************/
+module "subnets" {
+  source           = "../modules/subnets"
+  project_id       = var.project_id
+  network_name     = module.vpc.network_name
+  subnets          = var.subnets
+  secondary_ranges = var.secondary_ranges
+}
+
+/******************************************
+	Routes
+ *****************************************/
+module "routes" {
+  source                                 = "../modules/routes"
+  project_id                             = var.project_id
+  network_name                           = module.vpc.network_name
+  routes                                 = var.routes
+  delete_default_internet_gateway_routes = var.delete_default_internet_gateway_routes
+  module_depends_on                      = [module.subnets.subnets]
+}
